@@ -67,29 +67,29 @@ class SQLAlchemy(FlaskSQLAlchemy):
     def get_engine(self, app, bind=None):
         """Returns the connection and creates it on first call"""
 
-        if not hasattr(self, '_mono_connection'):
+        if not hasattr(self, '_tears_connection'):
             engine = super(SQLAlchemy, self).get_engine(app, bind)
-            self._connection = engine.connect()
+            self._tears_connection = engine.connect()
 
             # Apparently we cannot use sane row count in this case:
-            self._connection.dialect.supports_sane_rowcount = False
+            self._tears_connection.dialect.supports_sane_rowcount = False
 
             # Start a transaction in case of
-            self._transaction = self._connection.begin()
+            self._tears_transaction = self._tears_connection.begin()
 
-        return self._connection
+        return self._tears_connection
 
     def setup(self, *args, **kwargs):
         """If there is an ongoing connection roll it back"""
 
-        if self._transaction:
-            self._transaction.rollback()
+        if self._tears_transaction:
+            self._tears_transaction.rollback()
 
         # Start a new transaction inside the connection
-        self._transaction = self._connection.begin()
+        self._tears_transaction = self._tears_connection.begin()
 
     def teardown(self, *args, **kwargs):
         """Rollback the transaction"""
 
-        self._transaction.rollback()
-        self._transaction = None
+        self._tears_transaction.rollback()
+        self._tears_transaction = None

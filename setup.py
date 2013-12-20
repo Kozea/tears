@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages
+from setuptools import setup
 import os
 import re
 
 
 ROOT = os.path.dirname(__file__)
-with open(os.path.join(ROOT, 'cutter', '__init__.py')) as fd:
+with open(os.path.join(ROOT, 'tears.py')) as fd:
     __version__ = re.search("__version__ = '([^']+)'", fd.read()).group(1)
 
 setup(
@@ -17,10 +17,11 @@ setup(
                 " in a super transaction and rollback at teardown.",
     author="Florian Mounier",
     author_email="florian.mounier@kozea.fr",
-    packages="tears.py",
+    py_modules=["tears"],
     platforms="Any",
     provides=['tears'],
-    depends=['flask_sqlalchemy'],
+    license="GPLv3",
+    install_requires=['flask_sqlalchemy'],
     # tests_require=["pytest"],
     classifiers=[
         "Development Status :: 4 - Beta",
