@@ -42,7 +42,8 @@ class Connection(sqlalchemy.engine.base.Connection):
 
     def teardown(self):
         """Rollback the super transaction"""
-        self.__transaction.rollback()
+        if self.__transaction:
+            self.__transaction.rollback()
         self.__transaction = sqlalchemy.engine.base.RootTransaction(self)
 
     def begin(self):
