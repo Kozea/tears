@@ -6,12 +6,12 @@ Description
 -----------
 
 
-Flask SQLAlchemy single connection extension to run tests in a super transaction and rollback at teardown.
+SQLAlchemy single connection strategy overwrite to run tests in a super transaction and rollback at teardown.
 
 This SQLAlchemy class uses an unique connection with an external transaction (see: http://www.sqlalchemy.org/docs/orm/session.html#joining-a-session-into-an-external-transaction)
 
-It overrides the `get_engine` method to return the connection instead
-of the engine in order to prevent other connections creation.
+It overrides the plain strategy to implement custom `Engine` and `Connection`
+
 
 It exposes two methods:
    - `setup` which creates a new external transaction
@@ -28,17 +28,17 @@ A common pattern would be:
 
 ````python
    if testing:
-       from tears import SQLAlchemy
-   else:
-       from flask_sqlalchemy import SQLAlchemy
+     import tears
+   import sqlalchemy
+   # sqlalchemy stuff
 ````
 
 and in tests:
 
 ````python
     def setUp():
-        app.db.setup()
+        app.db.session.bind.setup()
 
     def tearDown():
-        app.db.teardown()
+        app.db.session.bind.rollback()
 ````
