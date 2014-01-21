@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of tears
 #
-# Flask SQLAlchemy single connection extension to run tests
+# SQLAlchemy single connection strategy overwrite to run tests
 # in a super transaction and rollback at teardown.
 # Copyright © 2013 Florian Mounier
 #
@@ -21,74 +21,63 @@
 
 """
 
-tears - Flask SQLAlchemy single connection extension to run tests
+tears - SQLAlchemy single connection strategy overwrite to run tests
         in a super transaction and rollback at teardown.
 
 """
 
+import sqlalchemy.engine.strategies
+import sqlalchemy.engine.base
+import logging
 
-from flask_sqlalchemy import SQLAlchemy as FlaskSQLAlchemy
+__version__ = '0.2'
 
-__version__ = '0.1'
+log = logging.getLogger('tears')
 
 
-class SQLAlchemy(FlaskSQLAlchemy):
-    """
-       This SQLAlchemy class uses an unique connection with an external
-       transaction (see: http://www.sqlalchemy.org/docs/orm/session.html
-                         #joining-a-session-into-an-external-transaction)
+class Connection(sqlalchemy.engine.base.Connection):
+    def __init__(self, *args, **kwargs):
+        super(Connection, self).__init__(*args, **kwargs)
+        self.__transaction = sqlalchemy.engine.base.RootTransaction(self)
 
-       It overrides the `get_engine` method to return the connection instead
-       of the engine in order to prevent other connections creation.
+    def teardown(self):
+        """Rollback the super transaction"""
+        self.__transaction.rollback()
+        self.__transaction = sqlalchemy.engine.base.RootTransaction(self)
 
-       It exposes two methods:
-          `setup` which creates a new external transaction
-          `teardown` which rollbacks the external transaction
+    def begin(self):
+        """Ensure that there is a super transaction even after a rollback"""
+        if self.__transaction is None:
+            self.__transaction = sqlalchemy.engine.base.RootTransaction(self)
+        return super(Connection, self).begin()
 
-       This MUST be used only in testing environment for obvious reasons.
-       A common pattern would be:
-       ````
-          if testing:
-              from tears import SQLAlchemy
-          else:
-              from flask_sqlalchemy import SQLAlchemy
-       ````
+    def close(self):
+        """Do NOT close the connection"""
 
-       and in tests:
-       ````
-           def setUp():
-               app.db.setup()
 
-           def tearDown():
-               app.db.teardown()
-       ````
-       """
+class Engine(sqlalchemy.engine.base.Engine):
 
-    def get_engine(self, app, bind=None):
-        """Returns the connection and creates it on first call"""
+    def __init__(self, *args, **kwargs):
+        super(Engine, self).__init__(*args, **kwargs)
+        self._tears_connection = Connection(self, **kwargs)
 
-        if not hasattr(self, '_tears_connection'):
-            engine = super(SQLAlchemy, self).get_engine(app, bind)
-            self._tears_connection = engine.connect()
-
-            # Apparently we cannot use sane row count in this case:
-            self._tears_connection.dialect.supports_sane_rowcount = False
-            self._tears_transaction = None
-
+    def connect(self, **kwargs):
         return self._tears_connection
 
-    def setup(self, *args, **kwargs):
-        """If there is an ongoing connection roll it back"""
+    def contextual_connect(self, **kwargs):
+        return self._tears_connection
 
-        if self._tears_transaction:
-            self._tears_transaction.rollback()
+    def setup(self):
+        pass
 
-        # Start a new transaction inside the connection
-        self._tears_transaction = self._tears_connection.begin()
-        self.session = self.create_scoped_session()
+    def teardown(self):
+        self._tears_connection.teardown()
 
-    def teardown(self, *args, **kwargs):
-        """Rollback the transaction"""
 
-        self._tears_transaction.rollback()
-        self._tears_transaction = None
+class TearsEngineStrategy(sqlalchemy.engine.strategies.DefaultEngineStrategy):
+    """Strategy for configuring an Engine with threadlocal behavior."""
+
+    name = 'plain'
+    engine_cls = Engine
+
+TearsEngineStrategy()

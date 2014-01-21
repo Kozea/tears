@@ -13,7 +13,7 @@ with open(os.path.join(ROOT, 'tears.py')) as fd:
 setup(
     name="tears",
     version=__version__,
-    description="Flask SQLAlchemy single connection extension to run tests"
+    description="SQLAlchemy single connection strategy overwrite to run tests"
                 " in a super transaction and rollback at teardown.",
     author="Florian Mounier",
     author_email="florian.mounier@kozea.fr",
@@ -21,7 +21,7 @@ setup(
     platforms="Any",
     provides=['tears'],
     license="GPLv3",
-    install_requires=['flask_sqlalchemy'],
+    install_requires=['sqlalchemy'],
     # tests_require=["pytest"],
     classifiers=[
         "Development Status :: 4 - Beta",
