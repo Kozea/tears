@@ -73,9 +73,7 @@ class SQLAlchemy(FlaskSQLAlchemy):
 
             # Apparently we cannot use sane row count in this case:
             self._tears_connection.dialect.supports_sane_rowcount = False
-
-            # Start a transaction in case of
-            self._tears_transaction = self._tears_connection.begin()
+            self._tears_transaction = None
 
         return self._tears_connection
 
@@ -87,6 +85,7 @@ class SQLAlchemy(FlaskSQLAlchemy):
 
         # Start a new transaction inside the connection
         self._tears_transaction = self._tears_connection.begin()
+        self.session = self.create_scoped_session()
 
     def teardown(self, *args, **kwargs):
         """Rollback the transaction"""
