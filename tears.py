@@ -57,15 +57,20 @@ class Connection(sqlalchemy.engine.base.Connection):
 
 
 class Engine(sqlalchemy.engine.base.Engine):
+    _connection_cls = Connection
 
     def __init__(self, *args, **kwargs):
         super(Engine, self).__init__(*args, **kwargs)
-        self._tears_connection = Connection(self, **kwargs)
+        self._tears_connection = None
 
     def connect(self, **kwargs):
+        if not self._tears_connection:
+            self._tears_connection = super(Engine, self).connect(**kwargs)
         return self._tears_connection
 
     def contextual_connect(self, **kwargs):
+        if not self._tears_connection:
+            self._tears_connection = super(Engine, self).contextual_connect(**kwargs)
         return self._tears_connection
 
     def setup(self):
@@ -75,7 +80,7 @@ class Engine(sqlalchemy.engine.base.Engine):
         self._tears_connection.teardown()
 
 
-class TearsEngineStrategy(sqlalchemy.engine.strategies.DefaultEngineStrategy):
+class TearsEngineStrategy(sqlalchemy.engine.strategies.PlainEngineStrategy):
     """Strategy for configuring an Engine with threadlocal behavior."""
 
     name = 'plain'
