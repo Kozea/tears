@@ -29,7 +29,7 @@ tears - SQLAlchemy single connection strategy overwrite to run tests
 import sqlalchemy.engine.strategies
 import sqlalchemy.engine.base
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 
 class Connection(sqlalchemy.engine.base.Connection):
@@ -74,7 +74,8 @@ class Engine(sqlalchemy.engine.base.Engine):
         pass
 
     def teardown(self):
-        self._tears_connection.teardown()
+        if self._tears_connection:
+            self._tears_connection.teardown()
 
 
 class TearsEngineStrategy(sqlalchemy.engine.strategies.PlainEngineStrategy):
