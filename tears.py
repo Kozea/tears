@@ -28,11 +28,8 @@ tears - SQLAlchemy single connection strategy overwrite to run tests
 
 import sqlalchemy.engine.strategies
 import sqlalchemy.engine.base
-import logging
 
 __version__ = '0.2'
-
-log = logging.getLogger('tears')
 
 
 class Connection(sqlalchemy.engine.base.Connection):
